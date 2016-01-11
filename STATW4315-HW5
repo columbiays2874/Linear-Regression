@@ -1,0 +1,93 @@
+#Problem 1
+setwd('/users/shiyuchen/desktop')
+data <- read.table('Homework_data_5_Problem1and2.txt')
+names(data) <- c('y', 'x1', 'x2', 'x3', 'x4')
+#1(a)
+pairs(~y+x1+x2+x3+x4, data = data)
+cor(data[2:5])
+#1(b)
+X <- data.matrix(cbind(rep(1,25), data[2:5]))
+Y <- data.matrix(data[1])
+b<-solve(t(X)%*%X)%*%t(X)%*%Y
+summary(lm(y~x1+x2+x3+x4, data=data))
+#1(c)
+library(leaps)
+leaps(x=data.matrix(data[2:5]), y=Y, method = 'adjr2')
+#1(d)
+model_x1 <- lm(y~x1, data=data)
+model_x2 <- lm(y~x2, data=data)
+model_x3 <- lm(y~x3, data=data)
+model_x4 <- lm(y~x4, data=data)
+summary(model_x1)
+summary(model_x2)
+summary(model_x3) #smallest p-value
+summary(model_x4)
+model_x3x1 <- update(model_x3, .~.+x1)
+model_x3x2 <- update(model_x3, .~.+x2)
+model_x3x4 <- update(model_x3, .~.+x4)
+summary(model_x3x1) #smallest p-value
+summary(model_x3x2)
+summary(model_x3x4)
+model_x3x1x2 <- update(model_x3x1, .~.+x2)
+model_x3x1x4 <- update(model_x3x1, .~.+x4)
+summary(model_x3x1x2)
+summary(model_x3x1x4) #smallest p_value
+model_x3x1x4x2 <- update(model_x3x1x4, .~.+x2)
+summary(model_x3x1x4x2) #p-value greater than 0.05
+#choose model_x3x1x4
+
+#Problem 2
+#2(a)
+X13 <- data.matrix(cbind(rep(1,25), data[2], data[4]))
+b13<-solve(t(X13)%*%X13)%*%t(X13)%*%Y
+Y13_hat <- X13%*%b13
+residual <- Y-Y13_hat
+plot(Y13_hat, residual)
+plot(data$x1, residual)
+plot(data$x2, residual)
+plot(data$x3, residual)
+plot(data$x4, residual)
+x1x3 <- data$x1*data$x3
+plot(x1x3, residual)
+#2(b)
+X1 <- data.matrix(cbind(rep(1,25), data$x1))
+b_y_x1 <-solve(t(X1)%*%X1)%*%t(X1)%*%Y
+Y_hat_y_x1 <- X1%*%b_y_x1
+residual_y_x1 <- Y-Y_hat_y_x1
+X3 <- data.matrix(data$x3)
+b_x3_x1 <-solve(t(X1)%*%X1)%*%t(X1)%*%X3
+X3_hat_x3_x1 <- X1%*%b_x3_x1
+residual_x3_x1 <- X3-X3_hat_x3_x1
+plot(residual_x3_x1, residual_y_x1)
+
+X3X <- data.matrix(cbind(rep(1,25), data$x3))
+b_y_x3 <-solve(t(X3X)%*%X3X)%*%t(X3X)%*%Y
+Y_hat_y_x3 <- X3X%*%b_y_x3
+residual_y_x3 <- Y-Y_hat_y_x3
+X1Y <- data.matrix(data$x1)
+b_x1_x3 <-solve(t(X3X)%*%X3X)%*%t(X3X)%*%X1Y
+X1_hat_x1_x3 <- X3X%*%b_x1_x3
+residual_x1_x3 <- X1Y-X1_hat_x1_x3
+plot(residual_x1_x3, residual_y_x3)
+#2(c)
+qqnorm(residual)
+MSE <- as.numeric((t(residual)%*%residual)/(25-3))
+r=c()
+for(k in 1:25){
+    r[k] <- sqrt(MSE)*qnorm((k-0.375)/(25+0.25))
+}
+cor(r,sort(residual))
+#2(d)
+H <- X13%*%solve(t(X13)%*%X13)%*%t(X13)
+hii <- diag(H)
+ti <- residual/sqrt(MSE*(1-hii))
+qt(1-0.05/20/50, 25-3-1)
+#2(e)
+match(hii[hii>2*3/25], hii)
+#2(f)
+dffits <- dffits(model_x3x1)
+dfbetas <- dfbetas(model_x3x1)
+di <- cooks.distance(model_x3x1)
+#2(g)
+library(car)
+vif(model_x3x1)
