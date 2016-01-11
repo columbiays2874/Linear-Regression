@@ -1,0 +1,41 @@
+setwd('/Users/shiyuchen/desktop')
+data <- read.table('Homework_2_data.txt')
+X <- data[2]
+Y <- data[1]
+X <- X$V2
+Y <- Y$V1
+N <- 45
+b1<-sum((X-sum(X)/N)*(Y-sum(Y)/N))/sum((X-sum(X)/N)^2)
+b0<-sum(Y)/N-b1*sum(X)/N
+Y_hat <- b0 + b1*X  # 1(a) The regression function
+plot(X, Y_hat, type = 'l')
+points(X, Y)   # 1(b) Plot the regression function and the data
+SSR <- sum((Y_hat-sum(Y)/N)^2)
+SSTO <- sum((Y-sum(Y)/N)^2)
+R_2 <- SSR/SSTO 
+#R Square indicates how well the regression function fit the data
+X_new <- 5
+Yh_hat <- b0 + b1*X_new 
+# 1(d) point estimate of mean service time when X=5#
+
+e <- Y-Y_hat
+s2 <- sum(e^2)/(N-2)
+s <- sqrt(s2)
+s_b1 <- sqrt(s2/sum((X-sum(X)/N)^2)) 
+
+alpha <- 0.1
+CI_beta1_LB <- b1 - qt(1-alpha/2, N-2)*s_b1
+CI_beta1_UB <- b1 + qt(1-alpha/2, N-2)*s_b1
+# 2(a) Confidence interval for beta1
+
+t_star <- b1/s_b1
+qt(1-alpha/2, N-2)
+pvalue_2b <- 2*(1-pt(t_star, N-2))
+# 2(b) Test whether beta1=0
+
+alpha2=0.05
+beta1_star <- 14
+t_star_beta1_star <- (b1- beta1_star)/s_b1
+qt(1-alpha2, N-2)
+pvalue_2d <- 1-pt(t_star_beta1_star, N-2)
+# 2(d) Test whether beta1<=14
