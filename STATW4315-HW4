@@ -1,0 +1,100 @@
+setwd('/Users/shiyuchen/Desktop')
+data1 <- read.table('Homework_4_data_Problem1.txt')
+names(data1) <- c('y', 'x1', 'x2', 'x3', 'x4')
+pairs(~x1+x2+x3+x4,data=data1)
+cor(data1)
+X <- data1[2:5]
+X <- cbind(rep(1,81),X)
+X <- data.matrix(X)
+Y <- data.matrix(data1[1])
+b<-solve(t(X)%*%X)%*%t(X)%*%Y
+
+Y_hat <- X%*%b
+residual <- Y-Y_hat
+boxplot(residual)
+x1_x2 <- data1$x1*data1$x2
+x1_x3 <- data1$x1*data1$x3
+x1_x4 <- data1$x1*data1$x4
+x2_x3 <- data1$x2*data1$x3
+x2_x4 <- data1$x2*data1$x4
+x3_x4 <- data1$x3*data1$x4
+plot(Y_hat, residual)
+plot(data1$x1, residual)
+plot(data1$x2, residual)
+plot(data1$x3, residual)
+plot(data1$x4, residual)
+plot(x1_x2, residual)
+plot(x1_x3, residual)
+plot(x1_x4, residual)
+plot(x2_x3, residual)
+plot(x2_x4, residual)
+plot(x3_x4, residual)
+qqnorm(residual)
+
+x_star1 <- matrix(c(1, 4, 10, 0.1, 80000), nrow=5, ncol=1)
+x_star2 <- matrix(c(1, 6, 11.5, 0, 120000), nrow=5, ncol=1)
+x_star3 <- matrix(c(1, 12, 12.5, 0.32, 340000), nrow=5, ncol=1)
+y_hat_star1 <- t(x_star1)%*%b
+y_hat_star2 <- t(x_star2)%*%b
+y_hat_star3 <- t(x_star3)%*%b
+MSE <- as.numeric((t(Y)%*%Y-t(b)%*%t(X)%*%Y)/(81-5))
+tau2_xtar1 <- t(x_star1)%*%solve(t(X)%*%X)%*%x_star1+1
+tau2_xtar2 <- t(x_star2)%*%solve(t(X)%*%X)%*%x_star2+1
+tau2_xtar3 <- t(x_star3)%*%solve(t(X)%*%X)%*%x_star3+1
+cat('The prediction interval for h1 is (',y_hat_star1-qt(0.975,81-5)*sqrt(MSE*tau2_xtar1),',',y_hat_star1+qt(0.975,81-5)*sqrt(MSE*tau2_xtar1),')')
+cat('The prediction interval for h2 is (',y_hat_star2-qt(0.975,81-5)*sqrt(MSE*tau2_xtar2),',',y_hat_star2+qt(0.975,81-5)*sqrt(MSE*tau2_xtar2),')')
+cat('The prediction interval for h1 is (',y_hat_star3-qt(0.975,81-5)*sqrt(MSE*tau2_xtar3),',',y_hat_star3+qt(0.975,81-5)*sqrt(MSE*tau2_xtar3),')')
+
+M_x4 <- aov(y~x4, data=data1)
+M_x1x4 <- aov(y~x1+x4, data=data1)
+M_x1x2x4 <- aov(y~x1+x2+x4, data=data1)
+M_x1x2x3x4 <- aov(y~x1+x2+x3+x4, data=data1)
+SSR_x4 <- summary(M_x4)[[1]][2][[1]][1]
+SSE_x4 <- summary(M_x4)[[1]][2][[1]][2]
+SSE_x1x4 <- summary(M_x1x4)[[1]][2][[1]][3]
+SSR_x1gx4 <- SSE_x4-SSE_x1x4 
+SSE_x1x2x4 <- summary(M_x1x2x4)[[1]][2][[1]][4]
+SSR_x2gx1x4 <- SSE_x1x4-SSE_x1x2x4 
+SSE_x1x2x3x4 <- summary(M_x1x2x3x4)[[1]][2][[1]][5]
+SSR_x3gx1x2x4 <- SSE_x1x2x4-SSE_x1x2x3x4 
+SSR_x1x2x3x4 <- 138.3269 
+SST <- SSR_x1x2x3x4+SSE_x1x2x3x4
+
+SSE_F <- SSE_x1x2x3x4
+SSE_R <- SSE_x1x2x4
+F_star <- (SSE_R-SSE_F)/(SSE_F/(81-5))
+qf(0.99,1,81-5)
+
+data2 <- read.table('Homework_4_data_Problem2.txt')
+names(data2) <- c('y', 'x1', 'x2')
+X <- data2[2:3]
+X <- cbind(rep(1,45),X)
+X <- data.matrix(X)
+Y <- data.matrix(data2[1])
+Y_bar <- mean(Y)
+b<-solve(t(X)%*%X)%*%t(X)%*%Y
+
+x1_h <- mean(c(data2[2])[[1]])
+x2_h <- mean(c(data2[3])[[1]])
+X_h <- matrix(c(1,x1_mean,x2_mean))
+Y_hat_h <- t(X_h)%*%b
+MSE <- as.numeric((t(Y)%*%Y-t(b)%*%t(X)%*%Y)/(45-4))
+s2_b <- MSE*solve(t(X)%*%X)
+s2_y_hat_h <- t(X_h)%*%s2_b%*%X_h
+qt(0.975, 81-5)*sqrt(s2_y_hat_h)
+
+Y_hat <- X%*%b
+residual <- Y-Y_hat
+x1_x2 <- data2$x1*data2$x2
+plot(x1_x2, residual)
+
+model_interaction <- lm(y~x1+x2+x1*x2, data=data2)
+M_F <- aov(y~x1+x2+x1*x2, data=data2)
+SSE_x1x2x1mx2 <- summary(M_F)[[1]][2][[1]][4]
+M_R <- aov(y~x1+x2, data=data2)
+SSE_x1x2 <-summary(M_R)[[1]][2][[1]][3]
+SSR_x1mx2gx1x2 <- SSE_x1x2-SSE_x1x2x1mx2
+F_star <- SSR_x1mx2gx1x2/(SSE_x1x2x1mx2)
+qf(0.9, 1, 45-4)
+pf(F_star, 1, 45-4)
+
