@@ -1,0 +1,78 @@
+
+setwd('/users/shiyuchen/downloads')
+census <- read.csv('census.csv')
+dd <- model.matrix(id~., data=census[,-7])
+df <- data.frame(dd[,-1])
+data <- data.frame(df, census[,7], census[,8])
+names(data)[13:14]=c('outcome','id')
+data$outcome <- as.factor(data$outcome)
+
+bad <- is.na(data$outcome)
+dcomplete <- data[!bad,]
+dmissing <- data[bad,]
+train <- sample(8891, 8000)
+dtrain <- dcomplete[train,]
+dtest <- dcomplete[-train,]
+test.outcome <- dtest$outcome
+
+
+#logistic*
+log <- glm(outcome~.-id, data=dtrain, family=binomial)
+prob <- predict(log, dtest, type='response')
+log.pred <- rep(0, 891)
+log.pred[prob>0.5]=1
+mean(test.outcome==log.pred) #0.7755331 0.8069585 0.8226712
+
+#lda*
+library(MASS)
+lda <- lda(outcome~.-id, data=dtrain)
+lda.pred <- predict(lda, dtest)$class
+mean(lda.pred==test.outcome) #0.7766554 0.8047138 0.8237935
+
+#qda**
+qda <- qda(outcome~.-id, data=dtrain)
+qda.pred <- predict(qda, dtest)$class
+mean(qda.pred==test.outcome) #0.7261504 0.7362514 0.7059484
+
+#trees*
+library(tree)
+tree <- tree(outcome~.-id, dtrain)
+tree.pred <- predict(tree, dtest, type='class')
+mean(tree.pred==test.outcome) #0.7766554 0.8058361 0.8237935
+cvtree <- cv.tree(tree, FUN = prune.misclass)
+prune <- prune.misclass(tree, best=6)
+mean(predict(prune, dtest, type='class')==test.outcome)
+
+#randomForest**
+library(randomForest)
+bag <- randomForest(outcome~.-id, data = dtrain, mtry=12, importance=TRUE)
+mean(predict(bag, dtest)==test.outcome) #0.7553311 0.7732884 0.7845118
+
+rf <- randomForest(outcome~.-id, data = dtrain, mtry=6, ntree=25)
+rf.pred <- predict(rf, dtest)
+mean(predict(rf, dtest)==test.outcome) #0.7643098 0.8069585 0.8136925
+
+#svm
+library(e1071)
+linear <- svm(outcome~.-id, data=dtrain, kernel='linear', cost=1, scale=FALSE)
+linear.pred <- predict(linear, dtest)
+mean(predict(linear, dtest)==test.outcome) #0.7766554 0.8058361 0.8237935
+
+
+polytune <- tune(svm, outcome~.-id, data=dtrain, kernel='polynomial', ranges=list(cost=c(0.1,1,10), degree=2))
+polytune.pred <- predict(polytune$best.model, dtest)
+mean(polytune.pred==test.outcome)
+poly <- svm(outcome~.-id, data=dtrain, kernel='polynomial', degree=2, cost=1)
+poly.pred <- predict(poly, dtest)
+mean(poly.pred==test.outcome) #0.7777778 0.8103255 0.8226712
+
+radial <- tune(svm, outcome~.-id, data=dtrain, kernel='radial', ranges=list(cost=c(0.1,1,10), gamma=c(0.1)))
+radialbest <- svm(outcome~.-id, data=dtrain, kernel='radial', gamma=0.1, cost=0.1)
+radial.pred <- predict(radialbest, dtest)
+mean(radial.pred==test.outcome) #0.7710438 0.8282828 0.8170595
+
+best <- tune(svm, outcome~.-id, data=dcomplete, kernel='polynomial', degree=2, ranges=list(cost=c(0.1,1,5)))
+outcome <- predict(best1$best.model, dmissing)
+output <- data.frame(dmissing[14], outcome)
+write.table(output, '/users/shiyuchen/desktop/output.txt', quote=FALSE, row.names=FALSE)
+
